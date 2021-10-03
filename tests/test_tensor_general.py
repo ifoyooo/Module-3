@@ -102,13 +102,13 @@ if numba.cuda.is_available():
 #     minitorch.grad_check(fn[1], t1, t2)
 
 
-@given(data())
-@pytest.mark.parametrize("fn", reduce)
-@pytest.mark.parametrize("backend", backend_tests)
-def test_reduce(fn, backend, data):
-    "Run backward for all reduce functions above."
-    t1 = data.draw(tensors(backend=backend))
-    minitorch.grad_check(fn[1], t1)
+# @given(data())
+# @pytest.mark.parametrize("fn", reduce)
+# @pytest.mark.parametrize("backend", backend_tests)
+# def test_reduce(fn, backend, data):
+#     "Run backward for all reduce functions above."
+#     t1 = data.draw(tensors(backend=backend))
+#     minitorch.grad_check(fn[1], t1)
 
 
 # @given(data())
@@ -138,37 +138,37 @@ def test_reduce(fn, backend, data):
 #     minitorch.grad_check(permute, t1)
 
 
-# @pytest.mark.task3_2
-# def test_mm2():
-#     a = minitorch.rand((2, 3), backend=FastTensorBackend)
-#     b = minitorch.rand((3, 4), backend=FastTensorBackend)
-#     c = a @ b
+@pytest.mark.task3_2
+def test_mm2():
+    a = minitorch.rand((2, 3), backend=FastTensorBackend)
+    b = minitorch.rand((3, 4), backend=FastTensorBackend)
+    c = a @ b
 
-#     c2 = (a.view(2, 3, 1) * b.view(1, 3, 4)).sum(1).view(2, 4)
+    c2 = (a.view(2, 3, 1) * b.view(1, 3, 4)).sum(1).view(2, 4)
 
-#     for ind in c._tensor.indices():
-#         assert_close(c[ind], c2[ind])
+    for ind in c._tensor.indices():
+        assert_close(c[ind], c2[ind])
 
 
-# # Matrix Multiplication
-# @given(data())
-# @pytest.mark.parametrize("backend", matmul_tests)
-# def test_mm(backend, data):
-#     small_ints = integers(min_value=2, max_value=4)
-#     A, B, C, D = (
-#         data.draw(small_ints),
-#         data.draw(small_ints),
-#         data.draw(small_ints),
-#         data.draw(small_ints),
-#     )
-#     a = data.draw(tensors(backend=backend, shape=(D, A, B)))
-#     b = data.draw(tensors(backend=backend, shape=(1, B, C)))
+# Matrix Multiplication
+@given(data())
+@pytest.mark.parametrize("backend", matmul_tests)
+def test_mm(backend, data):
+    small_ints = integers(min_value=2, max_value=4)
+    A, B, C, D = (
+        data.draw(small_ints),
+        data.draw(small_ints),
+        data.draw(small_ints),
+        data.draw(small_ints),
+    )
+    a = data.draw(tensors(backend=backend, shape=(D, A, B)))
+    b = data.draw(tensors(backend=backend, shape=(1, B, C)))
 
-#     c = a @ b
-#     c2 = (
-#         (a.contiguous().view(D, A, B, 1) * b.contiguous().view(1, 1, B, C))
-#         .sum(2)
-#         .view(D, A, C)
-#     )
-#     for ind in c._tensor.indices():
-#         assert_close(c[ind], c2[ind])
+    c = a @ b
+    c2 = (
+        (a.contiguous().view(D, A, B, 1) * b.contiguous().view(1, 1, B, C))
+        .sum(2)
+        .view(D, A, C)
+    )
+    for ind in c._tensor.indices():
+        assert_close(c[ind], c2[ind])

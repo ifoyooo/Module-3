@@ -183,8 +183,8 @@ def tensor_reduce(fn):
         reduce_index=cuda.local.array(MAX_DIMS,numba.int32)
         a_index=cuda.local.array(MAX_DIMS,numba.int32) #注意临时变量都需要这个包起来
         pos=cuda.local.array(2,numba.int32)
-        pos[0]=index_to_position(out_index,out_strides)
         to_index(i,out_shape,out_index)
+        pos[0]=index_to_position(out_index,out_strides)
         for j in range(reduce_size):
             to_index(j,reduce_shape,reduce_index)
             # a_index=reduce_index+out_index #直接赋值会重新定义
