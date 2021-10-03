@@ -102,7 +102,7 @@ def relu(x):
         float : relu value
     """
     # TODO: Implement for Task 0.1.
-    return max(x,0.0)
+    return x if x>0 else 0.0
     raise NotImplementedError('Need to implement for Task 0.1')
 
 
@@ -122,7 +122,8 @@ def exp(x):
 def log_back(x, d):
     r"If :math:`f = log` as above, compute d :math:`d \times f'(x)`"
     # TODO: Implement for Task 0.1.
-    return d*inv(x)
+    # return d*inv(x)
+    return d/x
     raise NotImplementedError('Need to implement for Task 0.1')
 
 

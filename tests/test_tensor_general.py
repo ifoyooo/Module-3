@@ -3,6 +3,8 @@ import pytest
 from hypothesis import given
 import numba
 from hypothesis.strategies import floats, integers, lists, data, permutations
+
+from minitorch.tensor_functions import tensor, tensor_fromlist
 from .strategies import tensors, shaped_tensors, assert_close
 
 
@@ -61,9 +63,11 @@ def test_create(backend, t1):
 @pytest.mark.parametrize("backend", backend_tests)
 def test_one_args(fn, backend, data):
     "Run forward for all one arg functions above."
+    # backend=TensorBackend #add by wfy to debug
     t1 = data.draw(tensors(backend=backend))
     t2 = fn[1](t1)
     for ind in t2._tensor.indices():
+        print(f"{t2[ind]},{fn[1](minitorch.Scalar(t1[ind])).data}")
         assert_close(t2[ind], fn[1](minitorch.Scalar(t1[ind])).data)
 
 

@@ -1,6 +1,6 @@
-from numba.core.typing.templates import _OverloadFunctionTemplate
-from numba.cuda.args import Out
 import numpy as np
+
+from minitorch.operators import mul
 from .tensor_data import (
     to_index,
     index_to_position,
@@ -42,9 +42,9 @@ def tensor_map(fn):
 
     def _map(out, out_shape, out_strides, in_storage, in_shape, in_strides):
         # TODO: Implement for Task 3.1.
-        out_index=out_shape.copy()#等价于copy
-        in_index=in_shape.copy()
         for i in prange(len(out)):
+            out_index=out_shape.copy()#等价于copy
+            in_index=in_shape.copy()
             ordinal=i+0#因为i是prange的索引，要保证其不能被改变，最好的方法就是将拷贝传入函数。
             to_index(ordinal,out_shape,out_index) # 获得在某个continous下的out_index
             broadcast_index(out_index,out_shape,in_shape,in_index) #转化到某个continous下的in_index
@@ -118,10 +118,10 @@ def tensor_zip(fn):
         b_shape,
         b_strides,
     ):
-        out_index=out_shape.copy()
-        a_index=a_shape.copy()
-        b_index=b_shape.copy()
         for i in prange(len(out)):
+            out_index=out_shape.copy()
+            a_index=a_shape.copy()
+            b_index=b_shape.copy()
             ordinal=i+0
             to_index(ordinal,out_shape,out_index)
             broadcast_index(out_index,out_shape,a_shape,a_index)
@@ -192,12 +192,12 @@ def tensor_reduce(fn):
         reduce_size # a number 
     ):
         # TODO: Implement for Task 3.1.
-        
-        out_index=out_shape.copy()
-        a_index=a_shape.copy()
-        reduce_index=np.array(reduce_shape)
-        reduce_shape=np.array(reduce_shape)
+        tmp_reduce_shape=np.array(reduce_shape)
         for i in prange(len(out)):
+            out_index=out_shape.copy()
+            a_index=a_shape.copy()
+            reduce_index=tmp_reduce_shape.copy()
+            reduce_shape=tmp_reduce_shape.copy() 
             ordinal_i=i+0
             to_index(ordinal_i,out_shape,out_index)
             out_pos=index_to_position(out_index,out_strides)
@@ -206,7 +206,8 @@ def tensor_reduce(fn):
                 to_index(ordinal_j,reduce_shape,reduce_index)
                 a_index=reduce_index+out_index
                 a_pos=index_to_position(a_index,a_strides)
-                out[out_pos]=fn(out[out_pos],a_storage[a_pos])
+                data=fn(out[out_pos],a_storage[a_pos])
+                out[out_pos]=data
     #注意我们reduce的实现实际上会保留一的维度。
     # raise NotImplementedError('Need to implement for Task 3.1')
     return njit(parallel=True)(_reduce)
@@ -227,10 +228,12 @@ def reduce(fn, start=0.0):
         :class:`TensorData` : new tensor data
     """
 
-    f = tensor_reduce(fn)
+    f = tensor_reduce(njit()(fn))
 
     # START Code Update
     def ret(a, dims=None, out=None):
+        if isinstance(dims,int):
+            dims=[dims]
         old_shape = None
         if out is None:
             out_shape = list(a.shape)
@@ -303,7 +306,27 @@ def tensor_matrix_multiply(
     """
 
     # TODO: Implement for Task 3.2.
-    raise NotImplementedError('Need to implement for Task 3.2')
+    # basic implementation
+    for i in prange(len(out)):
+        out_index=out_shape.copy()
+        ordinal_i=i+0
+        to_index(ordinal_i,out_shape,out_index)
+        out_pos=index_to_position(out_index,out_strides)
+        for j in prange(a_shape[-1]):
+            a_index=a_shape.copy()
+            b_index=b_shape.copy()
+            ordinal_j=j+0
+            a_tmp_index=out_index.copy()
+            a_tmp_index[-1]=ordinal_j
+            b_tmp_index=out_index.copy()
+            b_tmp_index[-2]=ordinal_j
+            broadcast_index(a_tmp_index,out_shape,a_shape,a_index)
+            broadcast_index(b_tmp_index,out_shape,b_shape,b_index)
+            out[out_pos]+=(a_storage[index_to_position(a_index,a_strides)]*b_storage[index_to_position(b_index,b_strides)])
+
+        
+
+    # raise NotImplementedError('Need to implement for Task 3.2')
 
 
 def matrix_multiply(a, b):

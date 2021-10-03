@@ -171,7 +171,7 @@ class Tensor(Variable):
     def zeros(self, shape=None):
         def zero(shape):
             return Tensor.make(
-                [0] * int(operators.prod(shape)), shape, backend=self.backend
+                [0.0] * int(operators.prod(shape)), shape, backend=self.backend
             )
 
         if shape is None:

@@ -261,6 +261,8 @@ def reduce(fn, start=0.0):
     # START Code Update
     def ret(a, dims=None, out=None):
         old_shape = None
+        if isinstance(dims,int):
+            dims=[dims]
         if out is None:
             out_shape = list(a.shape)
             for d in dims:

@@ -60,10 +60,10 @@ def to_index(ordinal, shape, out_index):
         ordinal-=out_index[i]*strides[i]
     out_index[-1]=ordinal%shape[-1]
     '''
-    pos=ordinal+0 #为ordinal创建一个拷贝，因为在map的循环里ordinal是索引的位置。
+    ordinal=ordinal+0
     for i in range(len(shape)-1,-1,-1):
-        out_index[i]=pos%shape[i]
-        pos//=shape[i]
+        out_index[i]=ordinal%shape[i]
+        ordinal//=shape[i]
     # raise NotImplementedError('Need to implement for Task 2.1')
 
 

@@ -12,6 +12,7 @@ from .tensor import Tensor
 import random
 
 
+
 # Constructors
 class Function(FunctionBase):
     data_type = Tensor
@@ -128,7 +129,7 @@ def make_tensor_backend(tensor_ops, is_cuda=False):
             def backward(ctx, grad_output):
                 # TODO: Implement for Task 2.4.
                 sig_a=ctx.saved_values
-                return mul_zip(grad_output,mul_zip(sig_a,add_zip(tensor([1]),neg_map(sig_a)))) 
+                return mul_zip(grad_output,mul_zip(sig_a,add_zip(tensor_fromlist([1]),neg_map(sig_a)))) 
                 # raise NotImplementedError('Need to implement for Task 2.4')
 
         class ReLU(Function):
@@ -197,7 +198,13 @@ def make_tensor_backend(tensor_ops, is_cuda=False):
                     out._tensor._storage[:] = grad_output[0]
                     return out
                 else:
-                    return grad_output
+                    # return grad_output #origin
+                    #TODO:REQUIRE TO THINK CAREFULLY 
+                    #这里为什么可以通过呢？ 明明grad_output广播为a_shape的形状后才能得到真正的梯度？原因是因为accumulate_derivative会自动用零加上，增广为它的形状。
+                    # 那为什么加法，乘法等要求一定要返回准确的形状呢？这是因为grad_output是a_shape的广播，刚好与第一种情况相反。
+                    # 可以想象到expand当中的三段处理中的第二段就是为了该情况而考虑的。
+                    # 但是对于更复杂的情况准确性就不一定了。
+                    return grad_output+zeros(a_shape)
 
         class All(Function):
             @staticmethod
@@ -208,7 +215,34 @@ def make_tensor_backend(tensor_ops, is_cuda=False):
                     return mul_reduce(
                         a.contiguous().view(int(operators.prod(a.shape))), 0
                     )
+        class Mean(Function):
+            @staticmethod
+            def forward(ctx, a, dim):
+                
+                if dim is not None:
+                    size=a.shape[dim]
+                    ctx.save_for_backward(a,dim,size)
+                    return mul_zip(add_reduce(a,dim),tensor_fromlist([1.0/a.shape[dim]]))
+                else:
+                    size=int(operators.prod(a.shape))
+                    ctx.save_for_backward(a,dim,size)
+                    return mul_zip(add_reduce(a.contiguous().view(size),0),tensor_fromlist([1.0/size]))
+                # raise NotImplementedError('Need to include this file from past assignment.')
 
+            @staticmethod
+            def backward(ctx, grad_output):
+                a,dim,size=ctx.saved_values
+                if dim is not None:
+                    ans=zeros(a.shape)
+                    ans=add_zip(ans,mul_zip(grad_output,tensor_fromlist([1.0/size])))
+                    return ans
+                else:
+                    ans=zeros(a.shape)
+                    ans=add_zip(ans,tensor_fromlist([grad_output[0]/size]))
+                    return ans
+
+
+                # raise NotImplementedError('Need to include this file from past assignment.')
         class LT(Function):
             @staticmethod
             def forward(ctx, a, b):
@@ -417,9 +451,16 @@ def grad_check(f, *vals):
         x.zero_grad_()
     random.seed(10)
     out = f(*vals)
+    # print("out.shape:",out.shape)
     out.sum().backward()
 
     for i, x in enumerate(vals):
         ind = x._tensor.sample()
+        # # debug
+        # print("hello")
+        # print("ind",ind)
+        # print("x.shape:",x.shape)
+        # print("x.grad.shape",x.grad.shape)
+        # assert 0
         check = grad_central_difference(f, *vals, arg=i, ind=ind)
         np.testing.assert_allclose(x.grad[ind], check, 1e-2, 1e-2)
