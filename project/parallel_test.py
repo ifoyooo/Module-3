@@ -21,11 +21,8 @@ print(tzip.parallel_diagnostics(level=3))
 print("REDUCE")
 out, a = minitorch.zeros((1,)), minitorch.zeros((10,))
 treduce = minitorch.fast_ops.tensor_reduce(njit()(minitorch.operators.add))
-
 treduce(*out.tuple(), *a.tuple(), (10,), 10)
 print(treduce.parallel_diagnostics(level=3))
-
-
 # MM
 print("MATRIX MULTIPLY")
 out, a, b = (

@@ -1,7 +1,7 @@
 from numba import cuda
 import numba
 from .tensor_data import (
-    count,
+    to_index,
     index_to_position,
     broadcast_index,
     shape_broadcast,
@@ -14,7 +14,7 @@ import numpy as np
 # If you get an error, read the docs for NUMBA as to what is allowed
 # in these functions.
 
-count = cuda.jit(device=True)(count)
+to_index = cuda.jit(device=True)(to_index)
 index_to_position = cuda.jit(device=True)(index_to_position)
 broadcast_index = cuda.jit(device=True)(broadcast_index)
 

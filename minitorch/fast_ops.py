@@ -1,10 +1,13 @@
+from numba.core.typing.templates import _OverloadFunctionTemplate
+from numba.cuda.args import Out
 import numpy as np
 from .tensor_data import (
-    count,
+    to_index,
     index_to_position,
     broadcast_index,
     shape_broadcast,
     MAX_DIMS,
+
 )
 from numba import njit, prange
 
@@ -12,7 +15,7 @@ from numba import njit, prange
 # This code will JIT compile fast versions your tensor_data functions.
 # If you get an error, read the docs for NUMBA as to what is allowed
 # in these functions.
-count = njit(inline="always")(count)
+to_index = njit(inline="always")(to_index)
 index_to_position = njit(inline="always")(index_to_position)
 broadcast_index = njit(inline="always")(broadcast_index)
 
@@ -39,7 +42,14 @@ def tensor_map(fn):
 
     def _map(out, out_shape, out_strides, in_storage, in_shape, in_strides):
         # TODO: Implement for Task 3.1.
-        raise NotImplementedError('Need to implement for Task 3.1')
+        out_index=out_shape.copy()#等价于copy
+        in_index=in_shape.copy()
+        for i in prange(len(out)):
+            ordinal=i+0#因为i是prange的索引，要保证其不能被改变，最好的方法就是将拷贝传入函数。
+            to_index(ordinal,out_shape,out_index) # 获得在某个continous下的out_index
+            broadcast_index(out_index,out_shape,in_shape,in_index) #转化到某个continous下的in_index
+            out[index_to_position(out_index,out_strides)]=fn(in_storage[index_to_position(in_index,in_strides)])#找到对应的strides下的position.
+        # raise NotImplementedError('Need to implement for Task 3.1')
 
     return njit(parallel=True)(_map)
 
@@ -108,8 +118,19 @@ def tensor_zip(fn):
         b_shape,
         b_strides,
     ):
-        # TODO: Implement for Task 3.1.
-        raise NotImplementedError('Need to implement for Task 3.1')
+        out_index=out_shape.copy()
+        a_index=a_shape.copy()
+        b_index=b_shape.copy()
+        for i in prange(len(out)):
+            ordinal=i+0
+            to_index(ordinal,out_shape,out_index)
+            broadcast_index(out_index,out_shape,a_shape,a_index)
+            broadcast_index(out_index,out_shape,b_shape,b_index)
+            out[index_to_position(out_index,out_strides)]=fn(
+                a_storage[index_to_position(a_index,a_strides)],
+                b_storage[index_to_position(b_index,b_strides)]
+                )
+        # raise NotImplementedError('Need to implement for Task 2.2')
 
     return njit(parallel=True)(_zip)
 
@@ -161,41 +182,54 @@ def tensor_reduce(fn):
     """
 
     def _reduce(
-        out,
-        out_shape,
+        out,  ##array
+        out_shape,   
         out_strides,
         a_storage,
         a_shape,
         a_strides,
-        reduce_shape,
-        reduce_size,
+        reduce_shape,# a list
+        reduce_size # a number 
     ):
         # TODO: Implement for Task 3.1.
-        raise NotImplementedError('Need to implement for Task 3.1')
-
+        
+        out_index=out_shape.copy()
+        a_index=a_shape.copy()
+        reduce_index=np.array(reduce_shape)
+        reduce_shape=np.array(reduce_shape)
+        for i in prange(len(out)):
+            ordinal_i=i+0
+            to_index(ordinal_i,out_shape,out_index)
+            out_pos=index_to_position(out_index,out_strides)
+            for j in prange(reduce_size):
+                ordinal_j=j+0
+                to_index(ordinal_j,reduce_shape,reduce_index)
+                a_index=reduce_index+out_index
+                a_pos=index_to_position(a_index,a_strides)
+                out[out_pos]=fn(out[out_pos],a_storage[a_pos])
+    #注意我们reduce的实现实际上会保留一的维度。
+    # raise NotImplementedError('Need to implement for Task 3.1')
     return njit(parallel=True)(_reduce)
+
 
 
 def reduce(fn, start=0.0):
     """
     Higher-order tensor reduce function. ::
-
       fn_reduce = reduce(fn)
       reduced = fn_reduce(a, dims)
-
-
     Args:
         fn: function from two floats-to-float to apply
-        a (:class:`Tensor`): tensor to reduce over
+        a (:class:`TensorData`): tensor to reduce over
         dims (list, optional): list of dims to reduce
-        out (:class:`Tensor`, optional): tensor to reduce into
-
+        out (:class:`TensorData`, optional): tensor to reduce into
     Returns:
-        :class:`Tensor` : new tensor
+        :class:`TensorData` : new tensor data
     """
 
-    f = tensor_reduce(njit()(fn))
+    f = tensor_reduce(fn)
 
+    # START Code Update
     def ret(a, dims=None, out=None):
         old_shape = None
         if out is None:
@@ -224,13 +258,14 @@ def reduce(fn, start=0.0):
                 reduce_shape.append(1)
 
         # Apply
-        f(*out.tuple(), *a.tuple(), np.array(reduce_shape), reduce_size)
+        f(*out.tuple(), *a.tuple(), reduce_shape, reduce_size)
 
         if old_shape is not None:
             out = out.view(*old_shape)
         return out
 
     return ret
+    # END Code Update
 
 
 @njit(parallel=True)
