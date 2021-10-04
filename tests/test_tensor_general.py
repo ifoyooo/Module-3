@@ -4,7 +4,6 @@ from hypothesis import given
 import numba
 from hypothesis.strategies import floats, integers, lists, data, permutations
 
-from minitorch.tensor_functions import tensor, tensor_fromlist
 from .strategies import tensors, shaped_tensors, assert_close
 
 
@@ -49,93 +48,93 @@ if numba.cuda.is_available():
     backend_tests.append(pytest.param(CudaTensorBackend, marks=pytest.mark.task3_3))
 
 
-# @pytest.mark.parametrize("backend", backend_tests)
-# @given(lists(floats(allow_nan=False)))
-# def test_create(backend, t1):
-#     "Create different tensors."
-#     t2 = minitorch.tensor(t1)
-#     for i in range(len(t1)):
-#         assert t1[i] == t2[i]
+@pytest.mark.parametrize("backend", backend_tests)
+@given(lists(floats(allow_nan=False)))
+def test_create(backend, t1):
+    "Create different tensors."
+    t2 = minitorch.tensor(t1)
+    for i in range(len(t1)):
+        assert t1[i] == t2[i]
 
 
-# @given(data())
-# @pytest.mark.parametrize("fn", one_arg)
-# @pytest.mark.parametrize("backend", backend_tests)
-# def test_one_args(fn, backend, data):
-#     "Run forward for all one arg functions above."
-#     # backend=TensorBackend #add by wfy to debug
-#     t1 = data.draw(tensors(backend=backend))
-#     t2 = fn[1](t1)
-#     for ind in t2._tensor.indices():
-#         print(f"{t2[ind]},{fn[1](minitorch.Scalar(t1[ind])).data}")
-#         assert_close(t2[ind], fn[1](minitorch.Scalar(t1[ind])).data)
+@given(data())
+@pytest.mark.parametrize("fn", one_arg)
+@pytest.mark.parametrize("backend", backend_tests)
+def test_one_args(fn, backend, data):
+    "Run forward for all one arg functions above."
+    # backend=TensorBackend #add by wfy to debug
+    t1 = data.draw(tensors(backend=backend))
+    t2 = fn[1](t1)
+    for ind in t2._tensor.indices():
+        print(f"{t2[ind]},{fn[1](minitorch.Scalar(t1[ind])).data}")
+        assert_close(t2[ind], fn[1](minitorch.Scalar(t1[ind])).data)
 
 
-# @given(data())
-# @pytest.mark.parametrize("fn", two_arg)
-# @pytest.mark.parametrize("backend", backend_tests)
-# def test_two_args(fn, backend, data):
-#     "Run forward for all two arg functions above."
-#     t1, t2 = data.draw(shaped_tensors(2, backend=backend))
-#     t3 = fn[1](t1, t2)
-#     for ind in t3._tensor.indices():
-#         assert (
-#             t3[ind] == fn[1](minitorch.Scalar(t1[ind]), minitorch.Scalar(t2[ind])).data
-#         )
+@given(data())
+@pytest.mark.parametrize("fn", two_arg)
+@pytest.mark.parametrize("backend", backend_tests)
+def test_two_args(fn, backend, data):
+    "Run forward for all two arg functions above."
+    t1, t2 = data.draw(shaped_tensors(2, backend=backend))
+    t3 = fn[1](t1, t2)
+    for ind in t3._tensor.indices():
+        assert (
+            t3[ind] == fn[1](minitorch.Scalar(t1[ind]), minitorch.Scalar(t2[ind])).data
+        )
 
 
-# @given(data())
-# @pytest.mark.parametrize("fn", one_arg)
-# @pytest.mark.parametrize("backend", backend_tests)
-# def test_one_derivative(fn, backend, data):
-#     "Run backward for all one arg functions above."
-#     t1 = data.draw(tensors(backend=backend))
-#     minitorch.grad_check(fn[1], t1)
+@given(data())
+@pytest.mark.parametrize("fn", one_arg)
+@pytest.mark.parametrize("backend", backend_tests)
+def test_one_derivative(fn, backend, data):
+    "Run backward for all one arg functions above."
+    t1 = data.draw(tensors(backend=backend))
+    minitorch.grad_check(fn[1], t1)
 
 
-# @given(data())
-# @pytest.mark.parametrize("fn", two_arg)
-# @pytest.mark.parametrize("backend", backend_tests)
-# def test_two_grad(fn, backend, data):
-#     "Run backward for all two arg functions above."
-#     t1, t2 = data.draw(shaped_tensors(2, backend=backend))
-#     minitorch.grad_check(fn[1], t1, t2)
+@given(data())
+@pytest.mark.parametrize("fn", two_arg)
+@pytest.mark.parametrize("backend", backend_tests)
+def test_two_grad(fn, backend, data):
+    "Run backward for all two arg functions above."
+    t1, t2 = data.draw(shaped_tensors(2, backend=backend))
+    minitorch.grad_check(fn[1], t1, t2)
 
 
-# @given(data())
-# @pytest.mark.parametrize("fn", reduce)
-# @pytest.mark.parametrize("backend", backend_tests)
-# def test_reduce(fn, backend, data):
-#     "Run backward for all reduce functions above."
-#     t1 = data.draw(tensors(backend=backend))
-#     minitorch.grad_check(fn[1], t1)
+@given(data())
+@pytest.mark.parametrize("fn", reduce)
+@pytest.mark.parametrize("backend", backend_tests)
+def test_reduce(fn, backend, data):
+    "Run backward for all reduce functions above."
+    t1 = data.draw(tensors(backend=backend))
+    minitorch.grad_check(fn[1], t1)
 
 
-# @given(data())
-# @pytest.mark.parametrize("fn", two_arg)
-# @pytest.mark.parametrize("backend", backend_tests)
-# def test_two_grad_broadcast(fn, backend, data):
-#     "Run backward for all two arg functions above with broadcast."
+@given(data())
+@pytest.mark.parametrize("fn", two_arg)
+@pytest.mark.parametrize("backend", backend_tests)
+def test_two_grad_broadcast(fn, backend, data):
+    "Run backward for all two arg functions above with broadcast."
 
-#     t1, t2 = data.draw(shaped_tensors(2, backend=backend))
-#     minitorch.grad_check(fn[1], t1, t2)
+    t1, t2 = data.draw(shaped_tensors(2, backend=backend))
+    minitorch.grad_check(fn[1], t1, t2)
 
-#     # broadcast check
-#     minitorch.grad_check(fn[1], t1.sum(0), t2)
-#     minitorch.grad_check(fn[1], t1, t2.sum(0))
+    # broadcast check
+    minitorch.grad_check(fn[1], t1.sum(0), t2)
+    minitorch.grad_check(fn[1], t1, t2.sum(0))
 
 
-# @given(data())
-# @pytest.mark.parametrize("backend", backend_tests)
-# def test_permute(backend, data):
-#     "Check permutations for all backends."
-#     t1 = data.draw(tensors(backend=backend))
-#     permutation = data.draw(permutations(range(len(t1.shape))))
+@given(data())
+@pytest.mark.parametrize("backend", backend_tests)
+def test_permute(backend, data):
+    "Check permutations for all backends."
+    t1 = data.draw(tensors(backend=backend))
+    permutation = data.draw(permutations(range(len(t1.shape))))
 
-#     def permute(a):
-#         return a.permute(*permutation)
+    def permute(a):
+        return a.permute(*permutation)
 
-#     minitorch.grad_check(permute, t1)
+    minitorch.grad_check(permute, t1)
 
 
 @pytest.mark.task3_2

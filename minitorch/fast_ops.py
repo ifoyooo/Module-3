@@ -314,13 +314,13 @@ def tensor_matrix_multiply(
         out_pos=index_to_position(out_index,out_strides)
         for j in prange(a_shape[-1]):
             a_index=a_shape.copy()
-            b_index=b_shape.copy()
+            b_index=b_shape.copy() #这里不能把定义那到前面去，因为可能会发生并行问题。
             ordinal_j=j+0
             a_tmp_index=out_index.copy()
             a_tmp_index[-1]=ordinal_j
             b_tmp_index=out_index.copy()
             b_tmp_index[-2]=ordinal_j
-            broadcast_index(a_tmp_index,out_shape,a_shape,a_index)
+            broadcast_index(a_tmp_index,out_shape,a_shape,a_index) #注意这里out_shape并不是a_shape的广播形式，但是由于我们的实现，仍然是正确的。
             broadcast_index(b_tmp_index,out_shape,b_shape,b_index)
             out[out_pos]+=(a_storage[index_to_position(a_index,a_strides)]*b_storage[index_to_position(b_index,b_strides)])
 

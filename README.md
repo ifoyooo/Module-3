@@ -21,3 +21,21 @@ python run_tests.py
 Several of the tests for this assignment will only run if you are on a GPU machine and will not
 run on github's test infrastructure. Please follow the instructions to setup up a colab machine
 to run these tests.
+
+## Progress
+
+- [x] task3_1
+
+- [x] task3_2
+
+- [x] task3_3
+
+- [x] task3_4
+
+- [x] task3_5
+
+## Result
+
+<img src="result/GPU/ezgif.com-gif-maker.gif">
+
+<img src="result/GPU/loss.png" width=400>
